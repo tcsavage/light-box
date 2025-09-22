@@ -52,21 +52,6 @@ class ColorF:
     
     def __str__(self):
         return f"r={self.r},g={self.g},b={self.b}"
-    
-
-class ColorSource:
-    @property
-    def color(self):
-        raise NotImplementedError("Subclasses must implement color property")
-    
-
-class ConstantColor(ColorSource):
-    def __init__(self, color):
-        self._color = color
-        
-    @property
-    def color(self):
-        return self._color
 
 
 class NeoPixelBlock:
@@ -163,8 +148,8 @@ class Renderers(BaseRenderer):
 
 
 class AnimationFlash(Animation):
-    def __init__(self, color_source, a=12.0, b=2.0, c=2.0, d=2.0):
-        self.color_source = color_source
+    def __init__(self, color, a=12.0, b=2.0, c=2.0, d=2.0):
+        self.color = color
         self.a = a
         self.b = b
         self.c = c
@@ -180,16 +165,16 @@ class AnimationFlash(Animation):
         # print(f"x={x}")
         y = min(1.0 - (int(self.a * x) % self.b), 1.0 - (int(self.c * x) % self.d))
         # print(f"y={y}")
-        return self.color_source.color.scale_brightness(y)
+        return self.color.scale_brightness(y)
     
 
 class AnimationSpinner(Animation):
-    def __init__(self, color_source):
-        self.color_source = color_source
+    def __init__(self, color):
+        self.color = color
 
     def evaluate(self, t, n):
         # print(f"Evaluating at t={t}, n={n}")
-        color = self.color_source.color
+        color = self.color
         x = t + n
         # print(f"x={x}")
         y = (x % 1.0) ** 2.0
@@ -337,7 +322,7 @@ def make_rainbow_renderer(np):
 
 
 def make_color_spinner_renderer(np, color):
-    anim = SpeedAdjustedAnimation(AnimationSpinner(ConstantColor(color)), speed=3.0)
+    anim = SpeedAdjustedAnimation(AnimationSpinner(color), speed=3.0)
     np_block1 = NeoPixelBlock(np, 0, n//2)
     np_block2 = NeoPixelBlock(np, n//2, n)
     np_split = NeoPixelReplicate(np_block1, np_block2)
@@ -346,7 +331,7 @@ def make_color_spinner_renderer(np, color):
 
 
 def make_color_flash_renderer(np, color):
-    flash_anim = SpeedAdjustedAnimation(AnimationFlash(ConstantColor(color)), speed=1.5)
+    flash_anim = SpeedAdjustedAnimation(AnimationFlash(color), speed=1.5)
     np_block1 = NeoPixelBlock(np, 0, n//2)
     np_block2 = NeoPixelBlock(np, n//2, n)
     renderer = Renderers(
@@ -359,8 +344,8 @@ def make_color_flash_renderer(np, color):
 def make_two_color_flash_renderer(np, color1, color2):
     anim = SpeedAdjustedAnimation(
         ConcatenatedAnimation(
-            AnimationFlash(ConstantColor(color1), d=1.0),
-            AnimationFlash(ConstantColor(color2), d=1.0),
+            AnimationFlash(color1, d=1.0),
+            AnimationFlash(color2, d=1.0),
         ),
         speed=1.5
     )
